@@ -1,0 +1,1 @@
+jarsigner -verbose -keystore secure.jks -storepass androidsecure -keypass androidsecure -sigfile CERT -digestalg SHA1 -sigalg MD5withRSA -signedjar payload-release.apk payload.apk secure
