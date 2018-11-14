@@ -1,1 +1,1 @@
-include ':app', ':secure'
+include ':app', ':secure', ':secure-jni'

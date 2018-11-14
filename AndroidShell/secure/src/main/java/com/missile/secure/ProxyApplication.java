@@ -35,6 +35,13 @@ public class ProxyApplication extends Application {
     private String libPath;
 
 
+    /**
+     * 思路：可以将我们使用的DexClassLoader加载器绑定到系统加载Activity的类加载器上，替换LoadedApk中的mClassLoader
+     * 如何获取LoadedApk? 需要从ActivityThread入手，在ActivityThread中有一个ArrayMap存放Apk包名和LoadedApk映射关系的数据结构，
+     * 就从这里入手，使用反射获取LoadedApk中的mClassLoader，然后将它替换成源apk使用的DexClassLoader加载器
+     *
+     * @param base
+     */
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
@@ -65,11 +72,18 @@ public class ProxyApplication extends Application {
             ArrayMap mPackages = (ArrayMap) RefInvoke.getFieldObject(
                     "android.app.ActivityThread", currentActivityThread,
                     "mPackages");
-            WeakReference wr = (WeakReference) mPackages.get(packageName);
+            WeakReference wr = (WeakReference) mPackages.get(packageName);  //获取当前的LoadedApk
 
-            DexClassLoader dLoader = new DexClassLoader(apkFileName, odexPath, libPath,
+            //这里，需要注意的是，DexClassLoader的最后一个参数，是DexClassLoader的parent，这里需要设置成PathClassLoader类，
+            // 因为我们上面虽然说是替换PathClassLoader为DexClassLoader,
+            // 但是PathClassLoader是系统本身默认的类加载器(也就是mClassLoader变量的值，我们如果单独的将DexClassLoader设置为mClassLoader的值的话，就会出错的)，
+            // 所以一定要讲DexClassLoader的父加载器设置成PathClassLoader，因为类加载器是符合双亲委派机制的。
+
+
+            DexClassLoader dLoader = new DexClassLoader(apkFileName, odexPath, libPath,/*getClassLoader()*/
                     (ClassLoader) RefInvoke.getFieldObject("android.app.LoadedApk", wr.get(), "mClassLoader"));
 
+            //替换ClassLoader
             RefInvoke.setFieldObject("android.app.LoadedApk", "mClassLoader", wr.get(), dLoader);
 
         } catch (Exception e) {
