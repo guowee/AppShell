@@ -18,11 +18,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.security.SecureRandom;
 import java.sql.Ref;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.DESKeySpec;
 
 import dalvik.system.DexClassLoader;
 
@@ -263,10 +269,34 @@ public class ProxyApplication extends Application {
 
     }
 
-    private byte[] decrypt(byte[] srcdata) {
+   /* private byte[] decrypt(byte[] srcdata) {
         for (int i = 0; i < srcdata.length; i++) {
             srcdata[i] = (byte) (0xFF ^ srcdata[i]);
         }
         return srcdata;
+    }*/
+
+
+    private static byte[] decrypt(byte[] src) {
+        try {
+            String key = "8A1ED465A5942AD6";
+            // DES算法要求有一个可信任的随机数源
+            SecureRandom random = new SecureRandom();
+            // 创建一个DESKeySpec对象
+            DESKeySpec desKeySpec = new DESKeySpec(key.getBytes());
+            // 创建一个密匙工厂
+            SecretKeyFactory keyFactory = SecretKeyFactory.getInstance("DES");
+            // 将DESKeySpec对象转换成SecretKey对象
+            SecretKey secretkey = keyFactory.generateSecret(desKeySpec);
+            // Cipher对象实际完成解密操作
+            Cipher cipher = Cipher.getInstance("DES");
+            // 用密匙初始化Cipher对象
+            cipher.init(Cipher.DECRYPT_MODE, secretkey, random);
+            // 真正开始解密操作
+            return cipher.doFinal(src);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

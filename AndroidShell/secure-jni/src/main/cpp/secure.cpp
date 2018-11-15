@@ -15,7 +15,7 @@
 #define LOGI(...)  NULL
 #endif
 
-
+const jbyte DEFAULT_KEY[32] = "8A1ED465A5942AD6";
 
 /* Header for class com_missile_secure_ProxyApplication */
 
@@ -74,8 +74,8 @@ JNIEXPORT void JNICALL Java_com_missile_secure_ProxyApplication_originalAppCreat
 
     jclass ActivityThreadClass = env->FindClass("android/app/ActivityThread");
     jmethodID currentActivityThreadMethodId = env->GetStaticMethodID(ActivityThreadClass,
-                                                               "currentActivityThread",
-                                                               "()Landroid/app/ActivityThread;");
+                                                                     "currentActivityThread",
+                                                                     "()Landroid/app/ActivityThread;");
     jobject activityThread = env->CallStaticObjectMethod(ActivityThreadClass,
                                                          currentActivityThreadMethodId);
 
@@ -193,7 +193,7 @@ JNIEXPORT void JNICALL Java_com_missile_secure_ProxyApplication_originalAppCreat
  */
 JNIEXPORT jbyteArray JNICALL Java_com_missile_secure_ProxyApplication_decrypt
         (JNIEnv *env, jobject obj, jbyteArray data) {
-
+/*
     int len = env->GetArrayLength(data);
     signed char buff[len];
     env->GetByteArrayRegion(data, 0, len, buff);
@@ -203,6 +203,49 @@ JNIEXPORT jbyteArray JNICALL Java_com_missile_secure_ProxyApplication_decrypt
     jbyteArray result = env->NewByteArray(len);
     env->SetByteArrayRegion(result, 0, len, buff);
     return result;
+*/
+
+    jbyteArray key = env->NewByteArray(32);
+    env->SetByteArrayRegion(key, 0, 32, DEFAULT_KEY);
+
+    jclass SecureRandom = env->FindClass("java/security/SecureRandom");
+    jmethodID secureRandomMethodId = env->GetMethodID(SecureRandom, "<init>", "()V");
+    jobject random = env->NewObject(SecureRandom, secureRandomMethodId);
+
+    jclass DESKeySpecClass = env->FindClass("javax/crypto/spec/DESKeySpec");
+    jmethodID initDESKeySpecId = env->GetMethodID(DESKeySpecClass, "<init>", "([B)V");
+
+    jobject desKeySpec = env->NewObject(DESKeySpecClass, initDESKeySpecId, key);
+
+
+    jclass SecretKeyFactoryClass = env->FindClass("javax/crypto/SecretKeyFactory");
+    jmethodID getFactoryInstanceId = env->GetStaticMethodID(SecretKeyFactoryClass, "getInstance",
+                                                            "(Ljava/lang/String;)Ljavax/crypto/SecretKeyFactory;");
+
+    jobject secretKeyFactory = env->CallStaticObjectMethod(SecretKeyFactoryClass,
+                                                           getFactoryInstanceId,
+                                                           env->NewStringUTF("DES"));
+
+    jmethodID generateSecretId = env->GetMethodID(SecretKeyFactoryClass, "generateSecret",
+                                                  "(Ljava/security/spec/KeySpec;)Ljavax/crypto/SecretKey;");
+    jobject secretKey = env->CallObjectMethod(secretKeyFactory, generateSecretId, desKeySpec);
+
+    jclass CipherClass = env->FindClass("javax/crypto/Cipher");
+    jmethodID getInstanceId = env->GetStaticMethodID(CipherClass, "getInstance",
+                                                     "(Ljava/lang/String;)Ljavax/crypto/Cipher;");
+    jobject cipher = env->CallStaticObjectMethod(CipherClass, getInstanceId,
+                                                 env->NewStringUTF("DES"));
+    jmethodID initId = env->GetMethodID(CipherClass, "init", "(ILjava/security/Key;)V");
+    env->CallVoidMethod(cipher, initId, 2, secretKey, random);
+
+    jmethodID doFinalId = env->GetMethodID(CipherClass, "doFinal", "([B)[B");
+
+    if (env->ExceptionCheck()) {
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+        env->ThrowNew(env->FindClass("java/lang/Exception"), "DECRYPT ERROR !");
+    }
+    return (jbyteArray) env->CallObjectMethod(cipher, doFinalId, data);
 
 }
 

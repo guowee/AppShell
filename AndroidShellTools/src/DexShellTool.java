@@ -1,6 +1,11 @@
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.DESKeySpec;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.zip.Adler32;
 
 public class DexShellTool {
@@ -10,7 +15,7 @@ public class DexShellTool {
         try {
             File payloadSrcFile = new File("force/demo.apk");
             File unShellDexFile = new File("force/shell.dex");
-            byte[] payloadArray = encrpt(readFileBytes(payloadSrcFile));
+            byte[] payloadArray = encrpt(readFileBytes(payloadSrcFile), "8A1ED465A5942AD6");
             byte[] unShellDexArray = readFileBytes(unShellDexFile);
 
             int payloadLen = payloadArray.length;
@@ -113,13 +118,38 @@ public class DexShellTool {
         System.arraycopy(refs, 0, dexBytes, 32, 4);//修改（32-35）
     }
 
-
+/*
     private static byte[] encrpt(byte[] srcdata) {
         for (int i = 0; i < srcdata.length; i++) {
             srcdata[i] = (byte) (0xFF ^ srcdata[i]);
         }
         return srcdata;
+    }*/
+
+
+    private static byte[] encrpt(byte[] srcData, String key) {
+
+        try {
+            SecureRandom random = new SecureRandom();
+            DESKeySpec desKeySpec = new DESKeySpec(key.getBytes());
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("DES");
+            SecretKey secretKey = factory.generateSecret(desKeySpec);
+
+            Cipher cipher = Cipher.getInstance("DES");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, random);
+            return cipher.doFinal(srcData);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+        return null;
     }
+
+
+
+
 
 
     private static byte[] readFileBytes(File file) throws IOException {
