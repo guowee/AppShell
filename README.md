@@ -9,7 +9,7 @@
 ### AndroidShell 是一个Android Studio项目工程，其中包含了app，secure，secure-jni三个module.
 app -- 源APP，即待加壳的apk (demo.apk)<br/>
 secure -- 壳APP, 使用java实现加壳的过程.(shell.apk)<br/>
-secure-jni -- 壳APP，使用JNI实现加壳的过程.(shell.apk)
+secure-jni -- 壳APP，使用**JNI**实现加壳的过程.(shell.apk)
 
 ### AndroidShellTools 一个对apk加密并将apk与dex合并的工具
 主要功能是加密demo.apk,然后将加密后的demo.apk数据与shell.dex数据合并为classes.dex，修改classes.dex文件的头部，并添加apk文件的大小至尾部。
