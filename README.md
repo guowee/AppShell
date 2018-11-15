@@ -25,5 +25,5 @@ eg:
 
 jarsigner -verbose -keystore secure.jks -storepass androidsecure -keypass androidsecure -sigfile CERT -digestalg SHA1 -sigalg MD5withRSA -signedjar payload-release.apk payload.apk secure
 
-签名文件的密码：androidsecure
+签名文件的密码：androidsecure <br/>
 alais的密码：androidsecure
